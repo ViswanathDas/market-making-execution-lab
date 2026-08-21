@@ -1,0 +1,15 @@
+market:
+  s0: 100.0
+  sigma: 2.0
+  dt: 0.005
+  n_steps: 200
+  A: 140.0
+  k: 1.5
+maker:
+  gamma: 0.1
+  half_spread: 0.6
+risk:
+  max_inventory: 20
+experiment:
+  n_paths: 500
+  base_seed: 0
