@@ -56,3 +56,16 @@ class AvellanedaStoikovMarketMaker:
         r = self.reservation_price(mid, inventory, time_left)
         half = 0.5 * self.optimal_spread(time_left)
         return r - half, r + half
+
+
+class SpreadMatchedSymmetricMaker(AvellanedaStoikovMarketMaker):
+    """Ablation: the Avellaneda-Stoikov spread, but centred on the mid.
+
+    Same width as the inventory-aware maker at every step, with no inventory
+    skew. Comparing it with the full Avellaneda-Stoikov maker separates what
+    the wider spread buys from what the inventory skew buys.
+    """
+
+    def quotes(self, mid, inventory, time_left):
+        half = 0.5 * self.optimal_spread(time_left)
+        return mid - half, mid + half

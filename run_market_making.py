@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 import yaml
 
 from src.market_sim import MarketSimulator
-from src.market_maker import SymmetricMarketMaker, AvellanedaStoikovMarketMaker
+from src.market_maker import (SymmetricMarketMaker, AvellanedaStoikovMarketMaker,
+                              SpreadMatchedSymmetricMaker)
 from src.backtest import run_session
 from src.metrics import summarize
 
@@ -45,16 +46,20 @@ def main():
     avs = run_batch(lambda c: AvellanedaStoikovMarketMaker(
         gamma=c["maker"]["gamma"], sigma=c["market"]["sigma"], k=c["market"]["k"]), cfg)
 
+    # Ablation: same spread as Avellaneda-Stoikov, no inventory skew.
+    sm = run_batch(lambda c: SpreadMatchedSymmetricMaker(
+        gamma=c["maker"]["gamma"], sigma=c["market"]["sigma"], k=c["market"]["k"]), cfg)
+
+    runs = {"symmetric": sym, "spread_matched_no_skew": sm, "avellaneda_stoikov": avs}
     summary = pd.DataFrame({
-        "strategy": ["symmetric", "avellaneda_stoikov"],
-        "mean_pnl": [sym.final_pnl.mean(), avs.final_pnl.mean()],
-        "std_pnl": [sym.final_pnl.std(), avs.final_pnl.std()],
-        "sharpe_like": [sym.final_pnl.mean() / sym.final_pnl.std(),
-                        avs.final_pnl.mean() / avs.final_pnl.std()],
-        "mean_drawdown": [sym.max_drawdown.mean(), avs.max_drawdown.mean()],
-        "mean_fill_rate": [sym.fill_rate.mean(), avs.fill_rate.mean()],
-        "mean_inventory_std": [sym.inventory_std.mean(), avs.inventory_std.mean()],
-        "mean_max_abs_inv": [sym.max_abs_inventory.mean(), avs.max_abs_inventory.mean()],
+        "strategy": list(runs),
+        "mean_pnl": [d.final_pnl.mean() for d in runs.values()],
+        "std_pnl": [d.final_pnl.std() for d in runs.values()],
+        "sharpe_like": [d.final_pnl.mean() / d.final_pnl.std() for d in runs.values()],
+        "mean_drawdown": [d.max_drawdown.mean() for d in runs.values()],
+        "mean_fill_rate": [d.fill_rate.mean() for d in runs.values()],
+        "mean_inventory_std": [d.inventory_std.mean() for d in runs.values()],
+        "mean_max_abs_inv": [d.max_abs_inventory.mean() for d in runs.values()],
     })
     summary.to_csv(os.path.join(HERE, "results", "summary.csv"), index=False)
     print(summary.to_string(index=False))
